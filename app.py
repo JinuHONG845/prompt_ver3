@@ -31,16 +31,22 @@ def get_perplexity_response(prompt):
         "Content-Type": "application/json"
     }
     data = {
-        "model": "mixtral-8x7b-instruct",
-        "messages": [{"role": "user", "content": prompt}]
+        "model": "sonar-medium-chat",
+        "messages": [
+            {
+                "role": "user",
+                "content": prompt
+            }
+        ],
+        "max_tokens": 1024,
+        "temperature": 0.7
     }
     
     try:
         response = requests.post(url, headers=headers, json=data)
-        response.raise_for_status()  # HTTP 에러 체크
+        response.raise_for_status()
         response_json = response.json()
         
-        # 응답 구조 확인 및 에러 처리
         if 'error' in response_json:
             return f"Perplexity API Error: {response_json['error']}"
             
@@ -50,7 +56,7 @@ def get_perplexity_response(prompt):
             return "No valid response from Perplexity API"
             
     except requests.exceptions.RequestException as e:
-        return f"API Request Error: {str(e)}"
+        return f"API Request Error: {str(e)}\nResponse: {response.text if 'response' in locals() else 'No response'}"
     except Exception as e:
         return f"Error processing response: {str(e)}"
 
