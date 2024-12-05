@@ -103,8 +103,10 @@ if st.button("전송"):
                             if headers:
                                 url = "https://api.perplexity.ai/chat/completions"
                                 payload = {
-                                    "model": "mixtral-8x7b-instruct",
-                                    "messages": [{"role": "user", "content": user_input}]
+                                    "model": "llama-2-70b-chat",
+                                    "messages": [{"role": "user", "content": user_input}],
+                                    "max_tokens": 1024,
+                                    "temperature": 0.7
                                 }
                                 
                                 # 디버깅 정보 출력
