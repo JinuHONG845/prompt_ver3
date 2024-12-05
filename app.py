@@ -30,15 +30,28 @@ def get_perplexity_response(prompt):
         "Content-Type": "application/json"
     }
     data = {
-        "model": "pplx-7b-chat",
+        "model": "llama-3.1-sonar-small-128k-online",
         "messages": [
+            {
+                "role": "system",
+                "content": "Be precise and concise."
+            },
             {
                 "role": "user",
                 "content": prompt
             }
         ],
         "max_tokens": 1024,
-        "temperature": 0.7
+        "temperature": 0.2,
+        "top_p": 0.9,
+        "search_domain_filter": ["perplexity.ai"],
+        "return_images": False,
+        "return_related_questions": False,
+        "search_recency_filter": "month",
+        "top_k": 0,
+        "stream": False,
+        "presence_penalty": 0,
+        "frequency_penalty": 1
     }
     
     try:
@@ -61,7 +74,8 @@ def get_perplexity_response(prompt):
 
 def get_chatgpt_response(prompt):
     try:
-        response = openai_client.chat.completions.create(
+        client = openai.OpenAI(api_key=st.secrets["api_keys"]["OPENAI_API_KEY"])
+        response = client.chat.completions.create(
             model="gpt-4",
             messages=[{"role": "user", "content": prompt}]
         )
