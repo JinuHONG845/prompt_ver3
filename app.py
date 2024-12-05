@@ -1,131 +1,83 @@
 import streamlit as st
-from openai import OpenAI
+import openai
 from anthropic import Anthropic
 import google.generativeai as genai
-import requests
-import json
+from perplexity import Perplexity
+
+# API 키 설정
+openai.api_key = st.secrets["OPENAI_API_KEY"]
+anthropic = Anthropic(api_key=st.secrets["ANTHROPIC_API_KEY"])
+genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
+perplexity = Perplexity(api_key=st.secrets["PERPLEXITY_API_KEY"])
 
 # 페이지 설정
-st.set_page_config(
-    page_title="AI 모델 비교",
-    layout="wide"
-)
+st.set_page_config(page_title="LLM 성능 비교", layout="wide")
+st.title("LLM 성능 비교 도구")
 
-# API 클라이언트 초기화 함수들
-def init_openai():
-    try:
-        return OpenAI(api_key=str(st.secrets["OPENAI_API_KEY"]))
-    except Exception as e:
-        st.error("OpenAI API 키 설정에 문제가 있습니다.")
-        return None
-
-def init_anthropic():
-    try:
-        return Anthropic(api_key=str(st.secrets["ANTHROPIC_API_KEY"]))
-    except Exception as e:
-        st.error("Anthropic API 키 설정에 문제가 있습니다.")
-        return None
-
-def init_gemini():
-    try:
-        genai.configure(api_key=str(st.secrets["GOOGLE_API_KEY"]))
-        return True
-    except Exception as e:
-        st.error("Google API 키 설정에 문제가 있습니다.")
-        return False
-
-def get_perplexity_headers():
-    try:
-        return {
-            "accept": "application/json",
-            "content-type": "application/json",
-            "authorization": f"Bearer {str(st.secrets['PERPLEXITY_API_KEY'])}"
-        }
-    except Exception as e:
-        st.error("Perplexity API 키 설정에 문제가 있습니다.")
-        return None
-
-# API 클라이언트 초기화
-openai_client = init_openai()
-anthropic_client = init_anthropic()
-gemini_initialized = init_gemini()
-
-# 사이드바 설정
-st.sidebar.title("AI 모델 선택")
-
-# 모델 선택 (다중 선택 가능)
-selected_models = st.sidebar.multiselect(
-    "비교할 모델을 선택하세요 (다중 선택 가능):",
-    [
-        "Perplexity",
-        "GPT-4 Turbo",
-        "GPT-3.5 Turbo",
-        "Claude 3 Sonnet",
-        "Claude 3 Haiku",
-        "Gemini Pro",
-        "Gemini Nano"
-    ]
-)
-
-# 메인 영역
-st.title("AI 모델 비교 테스트")
+# 모델 선택
+models = {
+    "Perplexity": "pplx-7b-online",
+    "GPT-4": "gpt-4",
+    "GPT-3.5-Turbo": "gpt-3.5-turbo",
+    "Claude-3 Sonnet": "claude-3-sonnet",
+    "Claude-3 Haiku": "claude-3-haiku",
+    "Gemini Pro": "gemini-pro",
+    "Gemini Nano": "gemini-nano"
+}
 
 # 사용자 입력
-user_input = st.text_area("프롬프트를 입력하세요:", height=200)
+user_input = st.text_area("질문을 입력하세요:", height=100)
+selected_models = st.multiselect("비교할 모델을 선택하세요:", list(models.keys()))
 
-# 전송 버튼
-if st.button("전송"):
-    if not user_input:
-        st.warning("프롬프트를 입력해주세요.")
-    elif not selected_models:
-        st.warning("최소 하나의 모델을 선택해주세요.")
-    else:
-        # 선택된 각 모델에 대해 응답 생성
-        for model in selected_models:
-            with st.expander(f"{model} 응답", expanded=True):
-                with st.spinner("응답 생성 중..."):
-                    try:
-                        if model == "Perplexity":
-                            headers = get_perplexity_headers()
-                            if headers:
-                                url = "https://api.perplexity.ai/chat/completions"
-                                payload = {
-                                    "model": "pplx-70b",
-                                    "messages": [{"role": "user", "content": user_input}],
-                                    "max_tokens": 1024,
-                                    "temperature": 0.7
-                                }
-                                
-                                response = requests.post(url, json=payload, headers=headers)
-                                
-                                if response.status_code == 200:
-                                    result = response.json()
-                                    st.write(result["choices"][0]["message"]["content"])
-                                else:
-                                    st.error(f"API 오류: {response.status_code}")
-                                    st.error(f"오류 상세: {response.text}")
-                        
-                        elif "GPT" in model and openai_client:
-                            model_name = "gpt-4-turbo-preview" if "GPT-4" in model else "gpt-3.5-turbo"
-                            completion = openai_client.chat.completions.create(
-                                model=model_name,
-                                messages=[{"role": "user", "content": user_input}]
-                            )
-                            st.write(completion.choices[0].message.content)
-                        
-                        elif "Claude" in model and anthropic_client:
-                            model_name = "claude-3-sonnet-20240229" if "Sonnet" in model else "claude-3-haiku-20240307"
-                            response = anthropic_client.messages.create(
-                                model=model_name,
-                                messages=[{"role": "user", "content": user_input}]
-                            )
-                            st.write(response.content[0].text)
-                        
-                        elif "Gemini" in model and gemini_initialized:
-                            model_name = 'gemini-pro' if "Pro" in model else 'gemini-nano'
-                            model = genai.GenerativeModel(model_name)
-                            response = model.generate_content(user_input)
-                            st.write(response.text)
-                    
-                    except Exception as e:
-                        st.error(f"오류 발생: {str(e)}") 
+if st.button("응답 생성") and user_input and selected_models:
+    # 각 모델별 응답 생성
+    for model_name in selected_models:
+        st.subheader(f"{model_name} 응답:")
+        
+        try:
+            if model_name.startswith("GPT"):
+                response = openai.ChatCompletion.create(
+                    model=models[model_name],
+                    messages=[{"role": "user", "content": user_input}]
+                )
+                st.write(response.choices[0].message.content)
+                
+            elif model_name.startswith("Claude"):
+                response = anthropic.messages.create(
+                    model=models[model_name],
+                    messages=[{"role": "user", "content": user_input}]
+                )
+                st.write(response.content[0].text)
+                
+            elif model_name.startswith("Gemini"):
+                model = genai.GenerativeModel(models[model_name])
+                response = model.generate_content(user_input)
+                st.write(response.text)
+                
+            elif model_name == "Perplexity":
+                response = perplexity.chat(user_input)
+                st.write(response['output'])
+                
+        except Exception as e:
+            st.error(f"{model_name} 에러 발생: {str(e)}")
+            
+    # 응답 비교를 위한 표 추가
+    st.subheader("응답 비교")
+    comparison_data = []
+    for model_name in selected_models:
+        comparison_data.append({
+            "모델": model_name,
+            "토큰 수": len(user_input.split()),  # 간단한 예시, 실제로는 더 정확한 토큰 계산이 필요
+            "응답 시간": "측정 필요"  # 실제 구현시 시간 측정 로직 추가 필요
+        })
+    
+    st.table(comparison_data)
+
+# 사용 안내
+with st.expander("사용 방법"):
+    st.markdown("""
+    1. 질문을 입력창에 입력하세요.
+    2. 비교하고 싶은 모델들을 선택하세요.
+    3. '응답 생성' 버튼을 클릭하세요.
+    4. 각 모델의 응답을 비교해보세요.
+    """)
