@@ -90,7 +90,7 @@ if st.button("전송"):
                             if headers:
                                 url = "https://api.perplexity.ai/chat/completions"
                                 payload = {
-                                    "model": "llama-2-70b-chat",
+                                    "model": "pplx-70b",
                                     "messages": [{"role": "user", "content": user_input}],
                                     "max_tokens": 1024,
                                     "temperature": 0.7
