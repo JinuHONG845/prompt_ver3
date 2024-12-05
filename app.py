@@ -7,7 +7,7 @@ import json
 
 # 페이지 설정
 st.set_page_config(
-    page_title="AI 모델 비교",
+    page_title="AI 모델 비교 (Ver.241130)",
     layout="wide"
 )
 
