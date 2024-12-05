@@ -54,7 +54,7 @@ selected_models = st.sidebar.multiselect(
         "Claude 3 Sonnet",
         "Claude 3 Haiku",
         "Gemini Pro",
-        "Gemini Lite"
+        "Gemini Nano"
     ]
 )
 
@@ -117,7 +117,7 @@ if st.button("전송"):
                             st.write(response.content[0].text)
                         
                         elif "Gemini" in model:
-                            model_name = 'gemini-pro' if "Pro" in model else 'gemini-lite'
+                            model_name = 'gemini-pro' if "Pro" in model else 'gemini-nano'
                             model = genai.GenerativeModel(model_name)
                             response = model.generate_content(user_input)
                             st.write(response.text)
