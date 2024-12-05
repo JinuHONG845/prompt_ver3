@@ -2,12 +2,15 @@ import streamlit as st
 from openai import OpenAI
 from anthropic import Anthropic
 import google.generativeai as genai
-import os
 
-# API 키 설정
-openai_client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
-anthropic_client = Anthropic(api_key=st.secrets["ANTHROPIC_API_KEY"])
-genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+# API 키 설정 부분 수정
+try:
+    openai_client = OpenAI(api_key=str(st.secrets["OPENAI_API_KEY"]))
+    anthropic_client = Anthropic(api_key=str(st.secrets["ANTHROPIC_API_KEY"]))
+    genai.configure(api_key=str(st.secrets["GEMINI_API_KEY"]))
+except Exception as e:
+    st.error("API 키 설정에 문제가 있습니다. 관리자에게 문의하세요.")
+    st.stop()
 
 # 페이지 설정
 st.set_page_config(
