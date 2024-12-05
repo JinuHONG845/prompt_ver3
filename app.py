@@ -31,7 +31,7 @@ def get_perplexity_response(prompt):
         "Content-Type": "application/json"
     }
     data = {
-        "model": "sonar-medium-chat",
+        "model": "pplx-7b-chat",
         "messages": [
             {
                 "role": "user",
