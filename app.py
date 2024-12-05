@@ -55,6 +55,17 @@ def setup_gemini():
         st.error("Gemini API 키 설정에 문제가 있습니다.")
         return False
 
+def get_perplexity_client():
+    try:
+        headers = {
+            "Authorization": f"Bearer {str(st.secrets['PERPLEXITY_API_KEY'])}",
+            "Content-Type": "application/json"
+        }
+        return headers
+    except Exception as e:
+        st.error("Perplexity API 키 설정에 문제가 있습니다.")
+        return None
+
 # 전송 버튼
 if st.button("전송"):
     if not user_input:
@@ -68,7 +79,29 @@ if st.button("전송"):
                 with st.spinner("응답 생성 중..."):
                     try:
                         if model == "Perplexity":
-                            response = "Perplexity API 구현 필요"
+                            headers = get_perplexity_client()
+                            if headers:
+                                try:
+                                    import requests
+                                    url = "https://api.perplexity.ai/chat/completions"
+                                    payload = {
+                                        "model": "pplx-7b-chat",  # 또는 "pplx-70b-chat", "pplx-7b-online" 등
+                                        "messages": [
+                                            {
+                                                "role": "user",
+                                                "content": user_input
+                                            }
+                                        ]
+                                    }
+                                    response = requests.post(url, json=payload, headers=headers)
+                                    if response.status_code == 200:
+                                        response = response.json()["choices"][0]["message"]["content"]
+                                    else:
+                                        response = f"API 오류: {response.status_code}"
+                                except Exception as e:
+                                    response = f"오류 발생: {str(e)}"
+                            else:
+                                continue
                         
                         elif "GPT" in model:
                             client = get_openai_client()
