@@ -12,7 +12,7 @@ try:
         st.stop()
     
     # 각 API 키 설정
-    client = OpenAI(api_key=st.secrets["api_keys"]["OPENAI_API_KEY"])
+    openai_client = OpenAI(api_key=st.secrets["api_keys"]["OPENAI_API_KEY"])
     anthropic = Anthropic(api_key=st.secrets["api_keys"]["ANTHROPIC_API_KEY"])
     genai.configure(api_key=st.secrets["api_keys"]["GEMINI_API_KEY"])
     PERPLEXITY_API_KEY = st.secrets["api_keys"]["PERPLEXITY_API_KEY"]
@@ -61,8 +61,7 @@ def get_perplexity_response(prompt):
 
 def get_chatgpt_response(prompt):
     try:
-        client = openai.OpenAI(api_key=st.secrets["api_keys"]["OPENAI_API_KEY"])
-        response = client.chat.completions.create(
+        response = openai_client.chat.completions.create(
             model="gpt-4",
             messages=[{"role": "user", "content": prompt}]
         )
