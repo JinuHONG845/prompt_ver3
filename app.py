@@ -3,12 +3,65 @@ from openai import OpenAI
 from anthropic import Anthropic
 import google.generativeai as genai
 import requests
+import json
 
 # 페이지 설정
 st.set_page_config(
     page_title="AI 모델 비교",
     layout="wide"
 )
+
+# API 키 검증 및 초기화 함수들
+def validate_api_keys():
+    """API 키 존재 여부 확인 및 검증"""
+    required_keys = ["OPENAI_API_KEY", "ANTHROPIC_API_KEY", "PERPLEXITY_API_KEY", "GEMINI_API_KEY"]
+    missing_keys = [key for key in required_keys if key not in st.secrets]
+    if missing_keys:
+        st.error(f"Missing API keys: {', '.join(missing_keys)}")
+        return False
+    return True
+
+def get_perplexity_client():
+    """Perplexity API 클라이언트 설정"""
+    if "PERPLEXITY_API_KEY" not in st.secrets:
+        st.error("Perplexity API key is missing")
+        return None
+    
+    headers = {
+        "accept": "application/json",
+        "content-type": "application/json",
+        "authorization": f"Bearer {st.secrets['PERPLEXITY_API_KEY']}"
+    }
+    return headers
+
+def get_openai_client():
+    """OpenAI 클라이언트 설정"""
+    try:
+        return OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
+    except Exception as e:
+        st.error(f"OpenAI client error: {str(e)}")
+        return None
+
+def get_anthropic_client():
+    """Anthropic 클라이언트 설정"""
+    try:
+        return Anthropic(api_key=st.secrets["ANTHROPIC_API_KEY"])
+    except Exception as e:
+        st.error(f"Anthropic client error: {str(e)}")
+        return None
+
+def setup_gemini():
+    """Gemini 설정"""
+    try:
+        genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+        return True
+    except Exception as e:
+        st.error(f"Gemini setup error: {str(e)}")
+        return False
+
+# API 키 검증
+if not validate_api_keys():
+    st.stop()
 
 # 사이드바 설정
 st.sidebar.title("AI 모델 선택")
@@ -33,55 +86,6 @@ st.title("AI 모델 비교 테스트")
 # 사용자 입력
 user_input = st.text_area("프롬프트를 입력하세요:", height=200)
 
-# API 클라이언트 초기화 함수들
-def get_openai_client():
-    try:
-        return OpenAI(api_key=str(st.secrets["OPENAI_API_KEY"]))
-    except Exception as e:
-        st.error("OpenAI API 키 설정에 문제가 있습니다.")
-        return None
-
-def get_anthropic_client():
-    try:
-        return Anthropic(api_key=str(st.secrets["ANTHROPIC_API_KEY"]))
-    except Exception as e:
-        st.error("Anthropic API 키 설정에 문제가 있습니다.")
-        return None
-
-def setup_gemini():
-    try:
-        genai.configure(api_key=str(st.secrets["GEMINI_API_KEY"]))
-        return True
-    except Exception as e:
-        st.error("Gemini API 키 설정에 문제가 있습니다.")
-        return False
-
-def get_perplexity_client():
-    try:
-        # API 키 존재 여부 확인 및 디버깅
-        if "PERPLEXITY_API_KEY" not in st.secrets:
-            st.error("PERPLEXITY_API_KEY가 secrets에 없습니다.")
-            return None
-        
-        api_key = st.secrets["PERPLEXITY_API_KEY"]
-        if not api_key or api_key.strip() == "":
-            st.error("PERPLEXITY_API_KEY가 비어있습니다.")
-            return None
-
-        # 헤더 설정
-        headers = {
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json"
-        }
-        
-        # API 키 형식 확인 (선택적)
-        st.success("Perplexity API 키가 정상적으로 로드되었습니다.")
-        return headers
-
-    except Exception as e:
-        st.error(f"Perplexity API 키 설정 중 오류 발생: {str(e)}")
-        return None
-
 # 전송 버튼
 if st.button("전송"):
     if not user_input:
@@ -97,44 +101,36 @@ if st.button("전송"):
                         if model == "Perplexity":
                             headers = get_perplexity_client()
                             if headers:
-                                try:
-                                    url = "https://api.perplexity.ai/chat/completions"
-                                    payload = {
-                                        "model": "pplx-7b-online",
-                                        "messages": [
-                                            {
-                                                "role": "user",
-                                                "content": user_input
-                                            }
-                                        ],
-                                        "max_tokens": 1024,
-                                        "temperature": 0.7,
-                                        "stream": False
-                                    }
-                                    response = requests.post(url, json=payload, headers=headers)
-                                    if response.status_code == 200:
-                                        response = response.json()["choices"][0]["message"]["content"]
-                                    else:
-                                        error_detail = response.json() if response.content else "No detail available"
-                                        response = f"API 오류: {response.status_code}\n상세: {error_detail}"
-                                        st.error(response)
-                                except Exception as e:
-                                    response = f"오류 발생: {str(e)}"
-                                    st.error(response)
-                            else:
-                                continue
-                        
+                                url = "https://api.perplexity.ai/chat/completions"
+                                payload = {
+                                    "model": "mixtral-8x7b-instruct",
+                                    "messages": [{"role": "user", "content": user_input}]
+                                }
+                                
+                                # 디버깅 정보 출력
+                                st.write("요청 헤더:", headers)
+                                st.write("요청 페이로드:", payload)
+                                
+                                response = requests.post(url, json=payload, headers=headers)
+                                st.write("API 응답 상태:", response.status_code)
+                                
+                                if response.status_code == 200:
+                                    result = response.json()
+                                    st.write(result["choices"][0]["message"]["content"])
+                                else:
+                                    st.error(f"API 오류: {response.status_code}")
+                                    st.error(f"오류 상세: {response.text}")
+                            
                         elif "GPT" in model:
                             client = get_openai_client()
                             if client:
                                 model_name = "gpt-4-turbo-preview" if "GPT-4" in model else "gpt-3.5-turbo"
-                                response = client.chat.completions.create(
+                                completion = client.chat.completions.create(
                                     model=model_name,
                                     messages=[{"role": "user", "content": user_input}]
-                                ).choices[0].message.content
-                            else:
-                                continue
-                        
+                                )
+                                st.write(completion.choices[0].message.content)
+                            
                         elif "Claude" in model:
                             client = get_anthropic_client()
                             if client:
@@ -142,17 +138,15 @@ if st.button("전송"):
                                 response = client.messages.create(
                                     model=model_name,
                                     messages=[{"role": "user", "content": user_input}]
-                                ).content[0].text
-                            else:
-                                continue
-                        
+                                )
+                                st.write(response.content[0].text)
+                            
                         elif "Gemini" in model:
                             if setup_gemini():
-                                model_name = "gemini-ultra" if "Ultra" in model else "gemini-pro"
+                                model_name = 'gemini-ultra' if "Ultra" in model else 'gemini-pro'
                                 model = genai.GenerativeModel(model_name)
-                                response = model.generate_content(user_input).text
-                        
-                        st.write(response)
-                    
+                                response = model.generate_content(user_input)
+                                st.write(response.text)
+                            
                     except Exception as e:
-                        st.error(f"오류가 발생했습니다: {str(e)}") 
+                        st.error(f"오류 발생: {str(e)}") 
