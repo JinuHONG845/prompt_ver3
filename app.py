@@ -35,8 +35,24 @@ def get_perplexity_response(prompt):
         "messages": [{"role": "user", "content": prompt}]
     }
     
-    response = requests.post(url, headers=headers, json=data)
-    return response.json()["choices"][0]["message"]["content"]
+    try:
+        response = requests.post(url, headers=headers, json=data)
+        response.raise_for_status()  # HTTP 에러 체크
+        response_json = response.json()
+        
+        # 응답 구조 확인 및 에러 처리
+        if 'error' in response_json:
+            return f"Perplexity API Error: {response_json['error']}"
+            
+        if 'choices' in response_json and len(response_json['choices']) > 0:
+            return response_json['choices'][0]['message']['content']
+        else:
+            return "No valid response from Perplexity API"
+            
+    except requests.exceptions.RequestException as e:
+        return f"API Request Error: {str(e)}"
+    except Exception as e:
+        return f"Error processing response: {str(e)}"
 
 def get_chatgpt_response(prompt):
     response = openai.ChatCompletion.create(
