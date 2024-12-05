@@ -30,7 +30,7 @@ def get_perplexity_response(prompt):
         "Content-Type": "application/json"
     }
     data = {
-        "model": "llama-3.1-sonar-small-128k-online",
+        "model": "mistral-7b-instruct",
         "messages": [
             {
                 "role": "system",
@@ -44,14 +44,7 @@ def get_perplexity_response(prompt):
         "max_tokens": 1024,
         "temperature": 0.2,
         "top_p": 0.9,
-        "search_domain_filter": ["perplexity.ai"],
-        "return_images": False,
-        "return_related_questions": False,
-        "search_recency_filter": "month",
-        "top_k": 0,
-        "stream": False,
-        "presence_penalty": 0,
-        "frequency_penalty": 1
+        "stream": False
     }
     
     try:
