@@ -85,21 +85,29 @@ if st.button("전송"):
                                     import requests
                                     url = "https://api.perplexity.ai/chat/completions"
                                     payload = {
-                                        "model": "pplx-7b-chat",  # 또는 "pplx-70b-chat", "pplx-7b-online" 등
+                                        "model": "mixtral-8x7b-instruct",
                                         "messages": [
                                             {
                                                 "role": "user",
                                                 "content": user_input
                                             }
-                                        ]
+                                        ],
+                                        "max_tokens": 1024,
+                                        "temperature": 0.7,
+                                        "stream": False
                                     }
+                                    
                                     response = requests.post(url, json=payload, headers=headers)
+                                    
                                     if response.status_code == 200:
                                         response = response.json()["choices"][0]["message"]["content"]
                                     else:
-                                        response = f"API 오류: {response.status_code}"
+                                        error_detail = response.json() if response.content else "No detail available"
+                                        response = f"API 오류: {response.status_code}\n상세: {error_detail}"
+                                        st.error(response)
                                 except Exception as e:
                                     response = f"오류 발생: {str(e)}"
+                                    st.error(response)
                             else:
                                 continue
                         
