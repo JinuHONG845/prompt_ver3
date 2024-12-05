@@ -5,11 +5,24 @@ import google.generativeai as genai
 import requests
 import json
 
-# API 키 설정
-openai.api_key = st.secrets["api_keys"]["OPENAI_API_KEY"]
-anthropic = Anthropic(api_key=st.secrets["api_keys"]["ANTHROPIC_API_KEY"])
-genai.configure(api_key=st.secrets["api_keys"]["GEMINI_API_KEY"])
-PERPLEXITY_API_KEY = st.secrets["api_keys"]["PERPLEXITY_API_KEY"]
+# API 키 설정 with 예외 처리
+try:
+    # API 키 존재 여부 확인
+    if "api_keys" not in st.secrets:
+        st.error("API 키가 설정되지 않았습니다. Streamlit Secrets에서 api_keys 설정을 확인해주세요.")
+        st.stop()
+    
+    # 각 API 키 설정
+    openai.api_key = st.secrets["api_keys"]["OPENAI_API_KEY"]
+    anthropic = Anthropic(api_key=st.secrets["api_keys"]["ANTHROPIC_API_KEY"])
+    genai.configure(api_key=st.secrets["api_keys"]["GEMINI_API_KEY"])
+    PERPLEXITY_API_KEY = st.secrets["api_keys"]["PERPLEXITY_API_KEY"]
+    
+except Exception as e:
+    st.error(f"API 키 설정 중 오류가 발생했습니다: {str(e)}")
+    st.write("현재 설정된 secrets 내용:")
+    st.write(st.secrets)
+    st.stop()
 
 def get_perplexity_response(prompt):
     url = "https://api.perplexity.ai/chat/completions"
