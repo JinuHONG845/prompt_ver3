@@ -85,7 +85,7 @@ if st.button("전송"):
                                     import requests
                                     url = "https://api.perplexity.ai/chat/completions"
                                     payload = {
-                                        "model": "mixtral-8x7b-instruct",
+                                        "model": "sonar-medium-chat",
                                         "messages": [
                                             {
                                                 "role": "user",
@@ -96,9 +96,7 @@ if st.button("전송"):
                                         "temperature": 0.7,
                                         "stream": False
                                     }
-                                    
                                     response = requests.post(url, json=payload, headers=headers)
-                                    
                                     if response.status_code == 200:
                                         response = response.json()["choices"][0]["message"]["content"]
                                     else:
