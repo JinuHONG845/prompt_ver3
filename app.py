@@ -2,6 +2,7 @@ import streamlit as st
 from openai import OpenAI
 from anthropic import Anthropic
 import google.generativeai as genai
+import requests
 
 # 페이지 설정
 st.set_page_config(
@@ -57,13 +58,28 @@ def setup_gemini():
 
 def get_perplexity_client():
     try:
+        # API 키 존재 여부 확인 및 디버깅
+        if "PERPLEXITY_API_KEY" not in st.secrets:
+            st.error("PERPLEXITY_API_KEY가 secrets에 없습니다.")
+            return None
+        
+        api_key = st.secrets["PERPLEXITY_API_KEY"]
+        if not api_key or api_key.strip() == "":
+            st.error("PERPLEXITY_API_KEY가 비어있습니다.")
+            return None
+
+        # 헤더 설정
         headers = {
-            "Authorization": f"Bearer {str(st.secrets['PERPLEXITY_API_KEY'])}",
+            "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json"
         }
+        
+        # API 키 형식 확인 (선택적)
+        st.success("Perplexity API 키가 정상적으로 로드되었습니다.")
         return headers
+
     except Exception as e:
-        st.error("Perplexity API 키 설정에 문제가 있습니다.")
+        st.error(f"Perplexity API 키 설정 중 오류 발생: {str(e)}")
         return None
 
 # 전송 버튼
@@ -82,7 +98,6 @@ if st.button("전송"):
                             headers = get_perplexity_client()
                             if headers:
                                 try:
-                                    import requests
                                     url = "https://api.perplexity.ai/chat/completions"
                                     payload = {
                                         "model": "sonar-medium-chat",
