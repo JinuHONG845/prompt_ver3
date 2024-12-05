@@ -100,7 +100,7 @@ if st.button("전송"):
                                 try:
                                     url = "https://api.perplexity.ai/chat/completions"
                                     payload = {
-                                        "model": "sonar-medium-chat",
+                                        "model": "pplx-7b-chat",
                                         "messages": [
                                             {
                                                 "role": "user",
