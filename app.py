@@ -1,9 +1,8 @@
 import streamlit as st
-import openai
+from openai import OpenAI
 from anthropic import Anthropic
 import google.generativeai as genai
 import requests
-import json
 
 # API 키 설정 with 예외 처리
 try:
@@ -13,7 +12,7 @@ try:
         st.stop()
     
     # 각 API 키 설정
-    openai.api_key = st.secrets["api_keys"]["OPENAI_API_KEY"]
+    client = OpenAI(api_key=st.secrets["api_keys"]["OPENAI_API_KEY"])
     anthropic = Anthropic(api_key=st.secrets["api_keys"]["ANTHROPIC_API_KEY"])
     genai.configure(api_key=st.secrets["api_keys"]["GEMINI_API_KEY"])
     PERPLEXITY_API_KEY = st.secrets["api_keys"]["PERPLEXITY_API_KEY"]
@@ -61,11 +60,15 @@ def get_perplexity_response(prompt):
         return f"Error processing response: {str(e)}"
 
 def get_chatgpt_response(prompt):
-    response = openai.ChatCompletion.create(
-        model="gpt-4",
-        messages=[{"role": "user", "content": prompt}]
-    )
-    return response.choices[0].message.content
+    try:
+        client = openai.OpenAI(api_key=st.secrets["api_keys"]["OPENAI_API_KEY"])
+        response = client.chat.completions.create(
+            model="gpt-4",
+            messages=[{"role": "user", "content": prompt}]
+        )
+        return response.choices[0].message.content
+    except Exception as e:
+        return f"ChatGPT Error: {str(e)}"
 
 def get_claude_response(prompt):
     message = anthropic.messages.create(
@@ -97,10 +100,14 @@ def main():
         if not prompt:
             st.warning("프롬프트를 입력해주세요!")
             return
-            
+        
+        # Create columns based on selected models
+        cols = st.columns(len(models))
+        
         # 선택된 모델별로 응답 생성
-        for model in models:
-            with st.expander(f"{model} 응답"):
+        for col, model in zip(cols, models):
+            with col:
+                st.markdown(f"### {model}")
                 with st.spinner(f"{model} 응답 생성 중..."):
                     try:
                         if model == "Perplexity":
